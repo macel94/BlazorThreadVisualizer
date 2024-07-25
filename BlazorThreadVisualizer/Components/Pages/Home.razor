@@ -1,0 +1,61 @@
+﻿@page "/"
+@using BlazorThreadVisualizer.Models
+@using BlazorThreadVisualizer.Services
+@inject ThreadService ThreadService
+@inject ILogger<Home> _logger
+@rendermode InteractiveServer
+
+<h3>Thread Queue</h3>
+
+<div>
+    <h4>Running Thread</h4>
+    @if (RunningThread != null)
+    {
+        <div style="color:@RunningThread.Color">
+            @RunningThread.Name
+        </div>
+    }
+</div>
+<div>
+    <h4>Queued Threads</h4>
+    @foreach (var thread in QueuedThreads)
+    {
+        <div style="color:@thread.Color">
+            @thread.Name
+        </div>
+    }
+</div>
+<div>
+    <h4>Completed Threads</h4>
+    @foreach (var thread in CompletedThreads)
+    {
+        <div style="color:@thread.Color">
+            @thread.Name
+        </div>
+    }
+</div>
+
+@code {
+    List<BlazorThread> Threads => ThreadService.GetThreads();
+    BlazorThread? RunningThread => Threads.FirstOrDefault(t => t.Status == "running");
+    List<BlazorThread> QueuedThreads => Threads.Where(t => t.Status == "queued").ToList();
+    List<BlazorThread> CompletedThreads => Threads.Where(t => t.Status == "completed").ToList();
+
+    protected override void OnInitialized()
+    {
+        ThreadService.OnChange += HandleStateChange;
+        _logger.LogInformation("Subscribed to state changes");
+    }
+
+    void HandleStateChange()
+    {
+        _logger.LogInformation($"State changed event received in {nameof(Home)}");
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        ThreadService.OnChange -= HandleStateChange;
+        _logger.LogInformation("Unsubscribed from state changes");
+    }
+}
