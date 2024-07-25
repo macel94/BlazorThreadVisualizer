@@ -5,5 +5,5 @@ public class BlazorThread
     public int Id { get; set; }
     public string Name { get; set; }
     public string Status { get; set; } // "queued", "running", "completed"
-    public string Color { get; set; }
+    public string? Error { get; set; }
 }

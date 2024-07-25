@@ -1,13 +1,13 @@
 ﻿using BlazorThreadVisualizer.Models;
 
-namespace BlazorThreadVisualizer.Services;
-
 public class ThreadService
 {
     private List<BlazorThread> _threads;
     private int _nextId = 0;
     private readonly Random _random = Random.Shared;
     private readonly ILogger<ThreadService> _logger;
+    private Task? _processingTask;
+    private CancellationTokenSource _cancellationTokenSource;
 
     public event Action OnChange;
 
@@ -15,7 +15,8 @@ public class ThreadService
     {
         _logger = logger;
         _threads = GenerateFakeThreads();
-        Task.Run(ProcessThreads);
+        _cancellationTokenSource = new CancellationTokenSource();
+        _processingTask = Task.Run(() => ProcessThreads(_cancellationTokenSource.Token));
     }
 
     public List<BlazorThread> GetThreads() => _threads;
@@ -23,7 +24,7 @@ public class ThreadService
     private List<BlazorThread> GenerateFakeThreads()
     {
         var threads = new List<BlazorThread>();
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 5; i++)
         {
             int nextId = _nextId++;
             threads.Add(new BlazorThread
@@ -31,21 +32,14 @@ public class ThreadService
                 Id = nextId,
                 Name = $"BlazorThread {nextId}",
                 Status = "queued",
-                Color = GetRandomColor()
             });
         }
         return threads;
     }
 
-    private string GetRandomColor()
+    private async Task ProcessThreads(CancellationToken cancellationToken)
     {
-        var colors = new[] { "red", "green", "blue", "orange", "purple" };
-        return colors[_random.Next(colors.Length)];
-    }
-
-    private async Task ProcessThreads()
-    {
-        while (true)
+        while (!cancellationToken.IsCancellationRequested)
         {
             if (_threads.Any(t => t.Status == "queued"))
             {
@@ -54,7 +48,7 @@ public class ThreadService
                 nextThread.Status = "running";
                 NotifyStateChanged();
 
-                await Task.Delay(2000);
+                await Task.Delay(2000, cancellationToken);
 
                 _logger.LogInformation($"Completing thread: {nextThread.Name}");
                 nextThread.Status = "completed";
@@ -62,9 +56,18 @@ public class ThreadService
             }
             else
             {
-                await Task.Delay(1000);
+                await Task.Delay(1000, cancellationToken);
             }
         }
+    }
+
+    public void RestartQueue()
+    {
+        _cancellationTokenSource.Cancel();
+        _cancellationTokenSource = new CancellationTokenSource();
+        _threads = GenerateFakeThreads();
+        _processingTask = Task.Run(() => ProcessThreads(_cancellationTokenSource.Token));
+        NotifyStateChanged();
     }
 
     private void NotifyStateChanged()

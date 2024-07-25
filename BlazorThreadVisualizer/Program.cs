@@ -1,5 +1,4 @@
 using BlazorThreadVisualizer.Components;
-using BlazorThreadVisualizer.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 

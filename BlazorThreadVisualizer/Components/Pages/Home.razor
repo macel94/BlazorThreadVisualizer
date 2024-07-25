@@ -1,38 +1,42 @@
 ﻿@page "/"
 @using BlazorThreadVisualizer.Models
-@using BlazorThreadVisualizer.Services
 @inject ThreadService ThreadService
 @inject ILogger<Home> _logger
 @rendermode InteractiveServer
 
-<h3>Thread Queue</h3>
+<div class="container">
+    <h1>Thread Queue Simulator</h1>
+    <button @onclick="RestartQueue">Restart Queue</button>
+</div>
 
-<div>
-    <h4>Running Thread</h4>
-    @if (RunningThread != null)
-    {
-        <div style="color:@RunningThread.Color">
-            @RunningThread.Name
-        </div>
-    }
-</div>
-<div>
-    <h4>Queued Threads</h4>
-    @foreach (var thread in QueuedThreads)
-    {
-        <div style="color:@thread.Color">
-            @thread.Name
-        </div>
-    }
-</div>
-<div>
-    <h4>Completed Threads</h4>
-    @foreach (var thread in CompletedThreads)
-    {
-        <div style="color:@thread.Color">
-            @thread.Name
-        </div>
-    }
+<div class="container">
+    <div class="section">
+        <h4>Running Thread</h4>
+        @if (RunningThread != null)
+        {
+            <div class="running-thread">
+                @RunningThread.Name
+            </div>
+        }
+    </div>
+    <div class="section queue">
+        <h4>Queued Threads</h4>
+        @foreach (var thread in QueuedThreads)
+        {
+            <div class="queued-thread">
+                @thread.Name
+            </div>
+        }
+    </div>
+    <div class="section">
+        <h4>Completed Threads</h4>
+        @foreach (var thread in CompletedThreads)
+        {
+            <div class="completed-thread">
+                @thread.Name
+            </div>
+        }
+    </div>
 </div>
 
 @code {
@@ -57,5 +61,11 @@
     {
         ThreadService.OnChange -= HandleStateChange;
         _logger.LogInformation("Unsubscribed from state changes");
+    }
+
+    private void RestartQueue()
+    {
+        ThreadService.RestartQueue();
+        _logger.LogInformation("Queue restart initiated");
     }
 }
